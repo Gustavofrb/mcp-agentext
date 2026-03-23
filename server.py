@@ -8,7 +8,7 @@ import shutil
 import uvicorn
 
 # --- Configuração via variáveis de ambiente ---
-SANDBOX_DIR = os.path.abspath(os.environ.get("FILE_MANAGER_SANDBOX", "./sandbox"))
+SANDBOX_DIR = os.path.abspath(os.environ.get("FILE_MANAGER_SANDBOX", "/tmp/sandbox"))
 HOST = os.environ.get("FILE_MANAGER_HOST", "0.0.0.0")
 PORT = int(os.environ.get("FILE_MANAGER_PORT", "8000"))
 API_KEY = os.environ.get("FILE_MANAGER_API_KEY", "")
@@ -123,7 +123,7 @@ def list_files(dir_path: str = ".") -> str:
 
 
 # --- FastAPI app com MCP montado ---
-mcp_app = mcp.http_app(transport="streamable-http")
+mcp_app = mcp.http_app(transport="streamable-http", stateless_http=True)
 app = FastAPI(title="File Manager MCP", version="1.0.0", lifespan=mcp_app.lifespan)
 
 app.add_middleware(ApiKeyMiddleware)
@@ -152,3 +152,6 @@ if __name__ == "__main__":
     print(f"MCP endpoint: http://{HOST}:{PORT}/mcp/mcp")
     print(f"Health check: http://{HOST}:{PORT}/health")
     uvicorn.run(app, host=HOST, port=PORT)
+else:
+    # Vercel serverless — cria o sandbox em /tmp
+    os.makedirs(SANDBOX_DIR, exist_ok=True)
