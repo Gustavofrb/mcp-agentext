@@ -35,24 +35,7 @@ class ApiKeyMiddleware:
         await self.app(scope, receive, send)
 
 
-# --- FastAPI app ---
-app = FastAPI(title="File Manager MCP", version="1.0.0")
-
-app.add_middleware(ApiKeyMiddleware)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok", "sandbox": SANDBOX_DIR}
-
-
-# --- MCP server ---
+# --- MCP server + tools ---
 mcp = FastMCP("file-manager")
 
 
@@ -139,8 +122,26 @@ def list_files(dir_path: str = ".") -> str:
     return "\n".join(lines)
 
 
-# Monta o MCP server dentro do FastAPI (endpoint: /mcp/sse)
-app.mount("/mcp", mcp.http_app(transport="sse"))
+# --- FastAPI app com MCP montado ---
+mcp_app = mcp.http_app(transport="streamable-http")
+app = FastAPI(title="File Manager MCP", version="1.0.0", lifespan=mcp_app.lifespan)
+
+app.add_middleware(ApiKeyMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "sandbox": SANDBOX_DIR}
+
+
+# Monta o MCP server (endpoint: /mcp/mcp)
+app.mount("/mcp", mcp_app)
 
 
 if __name__ == "__main__":
@@ -148,6 +149,6 @@ if __name__ == "__main__":
     print(f"Servidor MCP file-manager iniciando em {HOST}:{PORT}")
     print(f"Diretório sandbox: {SANDBOX_DIR}")
     print(f"Autenticação: {'ativada' if API_KEY else 'desativada'}")
-    print(f"MCP endpoint: http://{HOST}:{PORT}/mcp/sse")
+    print(f"MCP endpoint: http://{HOST}:{PORT}/mcp/mcp")
     print(f"Health check: http://{HOST}:{PORT}/health")
     uvicorn.run(app, host=HOST, port=PORT)
