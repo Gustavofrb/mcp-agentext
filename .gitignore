@@ -1,0 +1,20 @@
+# Ambiente virtual
+venv/
+
+# Variáveis de ambiente (contém credenciais)
+.env
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Sandbox (dados locais)
+sandbox/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
